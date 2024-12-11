@@ -1,0 +1,16 @@
+Modify the next js project:
+
+User flow:
+1. The first page will be the login page where users can connect their wallet and login.
+2. The second page will be the dashboard where users can see the items they own.
+3. On clicking the item, the user will be redirected to the item page where they can see the details of the item. which will have a sell and details button.
+4. On clicking the sell button, the user will be redirected to the sell page where they can sell the item to someone by scanning the QR code of the buyer's wallet.
+5. On clicking the details button, the user will be redirected to the details page where they can see the details of the item.
+
+Store owner flow:
+1. The first page will be the login page where store owners can login.
+2. The second page will be the dashboard where store owners can see the items they own.
+3. On clicking the item, the store owner will be redirected to the item page where they can see the details of the item. which will have a sell and details button.
+4. On clicking the sell button, the store owner will be redirected to the sell page where they can sell the item to someone by scanning the QR code of the buyer's wallet.
+5. On clicking the details button, the store owner will be redirected to the details page where they can see the details of the item.
+
