@@ -223,4 +223,112 @@ describe("CycleChain", function () {
       console.log('Verification details:', verificationHistory);
     });
   });
+
+  describe("Owned Bicycles", function () {
+    it("Should correctly return all bicycles owned by an address", async function () {
+      const { cycleChain, manufacturer, customer } = await loadFixture(deployCycleChainFixture);
+      
+      // Register multiple bicycles
+      const bikesToRegister = [
+        { frameNumber: "BK2023001", model: "Mountain Pro" },
+        { frameNumber: "BK2023002", model: "Road Elite" },
+        { frameNumber: "BK2023003", model: "City Cruiser" }
+      ];
+
+      console.log('Registering multiple bicycles...');
+      
+      // Register bikes and transfer to customer
+      for (const bike of bikesToRegister) {
+        const proof = keccak256(toUtf8Bytes(bike.frameNumber));
+        await cycleChain.connect(manufacturer).registerBicycle(
+          bike.frameNumber,
+          "BikeComp",
+          bike.model,
+          proof
+        );
+        // Transfer bike to customer
+        await cycleChain.connect(manufacturer).transferFrom(
+          manufacturer.address,
+          customer.address,
+          bikesToRegister.indexOf(bike)
+        );
+      }
+
+      // Get owned bicycles
+      const [tokenIds, bicycleDetails] = await cycleChain.getOwnedBicycles(customer.address);
+
+      console.log('Retrieved owned bicycles:', {
+        numberOfBicycles: tokenIds.length,
+        tokenIds: tokenIds.map(id => id.toString()),
+        frameNumbers: bicycleDetails.map(bike => bike.frameNumber)
+      });
+
+      // Verify the results
+      expect(tokenIds.length).to.equal(3);
+      expect(bicycleDetails.length).to.equal(3);
+      
+      // Verify each bicycle's details
+      for (let i = 0; i < tokenIds.length; i++) {
+        expect(bicycleDetails[i].frameNumber).to.equal(bikesToRegister[i].frameNumber);
+        expect(bicycleDetails[i].model).to.equal(bikesToRegister[i].model);
+        expect(await cycleChain.ownerOf(tokenIds[i])).to.equal(customer.address);
+      }
+    });
+
+    it("Should return empty arrays for address with no bicycles", async function () {
+      const { cycleChain, customer } = await loadFixture(deployCycleChainFixture);
+      
+      const [tokenIds, bicycleDetails] = await cycleChain.getOwnedBicycles(customer.address);
+
+      console.log('Checking empty ownership:', {
+        tokenIds: tokenIds.length,
+        bicycleDetails: bicycleDetails.length
+      });
+
+      expect(tokenIds.length).to.equal(0);
+      expect(bicycleDetails.length).to.equal(0);
+    });
+
+    it("Should update owned bicycles after transfers", async function () {
+      const { cycleChain, manufacturer, customer } = await loadFixture(deployCycleChainFixture);
+      
+      // Register a bicycle
+      const frameNumber = "BK2023001";
+      const proof = keccak256(toUtf8Bytes(frameNumber));
+      
+      console.log('Testing ownership transfer scenario...');
+      
+      await cycleChain.connect(manufacturer).registerBicycle(
+        frameNumber,
+        "BikeComp",
+        "Mountain Pro",
+        proof
+      );
+
+      // Check manufacturer's bicycles
+      let [tokenIds, bicycleDetails] = await cycleChain.getOwnedBicycles(manufacturer.address);
+      expect(tokenIds.length).to.equal(1);
+      
+      // Transfer to customer
+      await cycleChain.connect(manufacturer).transferFrom(
+        manufacturer.address,
+        customer.address,
+        0
+      );
+
+      // Check updated ownership
+      [tokenIds, bicycleDetails] = await cycleChain.getOwnedBicycles(manufacturer.address);
+      expect(tokenIds.length).to.equal(0);
+
+      [tokenIds, bicycleDetails] = await cycleChain.getOwnedBicycles(customer.address);
+      expect(tokenIds.length).to.equal(1);
+      expect(bicycleDetails[0].frameNumber).to.equal(frameNumber);
+
+      console.log('Transfer test complete:', {
+        newOwner: customer.address,
+        ownedBicycles: tokenIds.length,
+        frameNumber: bicycleDetails[0].frameNumber
+      });
+    });
+  });
 }); 

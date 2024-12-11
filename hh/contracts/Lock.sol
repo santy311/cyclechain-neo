@@ -262,6 +262,36 @@ contract CycleChain is ERC721, Ownable {
         return componentChanges[tokenId];
     }
 
+    function getOwnedBicycles(address owner) 
+        external 
+        view 
+        returns (
+            uint256[] memory tokenIds,
+            Bicycle[] memory bicycleDetails
+        ) 
+    {
+        // First, count how many tokens this owner has
+        uint256 balance = balanceOf(owner);
+        
+        // Initialize return arrays with the correct size
+        tokenIds = new uint256[](balance);
+        bicycleDetails = new Bicycle[](balance);
+        
+        // Populate the arrays
+        uint256 currentIndex = 0;
+        
+        // Iterate through all possible tokens up to _nextTokenId
+        for (uint256 i = 0; i < _nextTokenId; i++) {
+            if (_exists(i) && ownerOf(i) == owner) {
+                tokenIds[currentIndex] = i;
+                bicycleDetails[currentIndex] = bicycles[i];
+                currentIndex++;
+            }
+        }
+        
+        return (tokenIds, bicycleDetails);
+    }
+
     function _exists(uint256 tokenId) internal view returns (bool) {
         return ownerOf(tokenId) != address(0);
     }
