@@ -1,8 +1,8 @@
-export {};
+import { Provider } from 'web3/providers';
 
 declare global {
   interface Window {
-    ethereum?: {
+    ethereum: Provider & {
       isMetaMask?: boolean;
       request: (args: { method: string; params?: any[] }) => Promise<any>;
       on: (event: string, callback: (...args: any[]) => void) => void;
@@ -10,4 +10,6 @@ declare global {
       removeAllListeners: (event: string) => void;
     };
   }
-} 
+}
+
+export {}; 

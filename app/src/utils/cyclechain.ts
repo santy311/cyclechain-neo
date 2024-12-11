@@ -1,11 +1,11 @@
-import { ethers, BrowserProvider, JsonRpcSigner, Contract } from 'ethers';
+import Web3 from 'web3';
+import { Contract } from 'web3-eth-contract';
 import { toast } from 'react-hot-toast';
 import CONTRACT_ABI from '../../contract_abi.json';
+import { AbiItem } from 'web3-utils';
 
-// You'll need to replace this with your deployed contract address
 const CYCLECHAIN_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CYCLECHAIN_CONTRACT_ADDRESS;
 
-// Fix the type imports from ethers
 export interface Bicycle {
   frameNumber: string;
   manufacturer: string;
@@ -32,9 +32,7 @@ export interface ComponentChange {
 
 export class CycleChainService {
   private contract: Contract | null = null;
-  // Update provider and signer types for ethers v6
-  private provider: BrowserProvider | null = null;
-  private signer: JsonRpcSigner | null = null;
+  private web3: Web3 | null = null;
 
   constructor() {
     this.initializeContract();
@@ -43,19 +41,15 @@ export class CycleChainService {
   private async initializeContract() {
     try {
       if (typeof window !== 'undefined' && window.ethereum) {
-        // Use BrowserProvider directly from ethers
-        this.provider = new BrowserProvider(window.ethereum);
-        this.signer = await this.provider.getSigner();
+        this.web3 = new Web3(window.ethereum as any);
         
-        // Make sure contract address exists
         if (!CYCLECHAIN_CONTRACT_ADDRESS) {
           throw new Error('Contract address not configured');
         }
 
-        this.contract = new Contract(
-          CYCLECHAIN_CONTRACT_ADDRESS,
-          CONTRACT_ABI,
-          this.signer
+        this.contract = new this.web3.eth.Contract(
+          CONTRACT_ABI as AbiItem[],
+          CYCLECHAIN_CONTRACT_ADDRESS
         );
       }
     } catch (error) {
@@ -68,16 +62,15 @@ export class CycleChainService {
     try {
       if (!this.contract) await this.initializeContract();
       
-      // Update to use the correct function from the ABI
-      const details = await this.contract!.getBicycleBasicDetails(tokenId);
+      const details = await this.contract!.methods.getBicycleBasicDetails(tokenId).call();
       
       return {
         frameNumber: details.frameNumber,
         manufacturer: details.manufacturer,
         model: details.model,
-        manufactureDate: new Date(details.manufactureDate.toNumber() * 1000), // Convert BigNumber to Date
+        manufactureDate: new Date(Number(details.manufactureDate) * 1000),
         currentOwner: details.owner,
-        isStolen: false, // Note: Add this if needed from another contract call
+        isStolen: false,
         tokenId: tokenId
       };
     } catch (error) {
@@ -89,10 +82,12 @@ export class CycleChainService {
 
   async reportStolen(tokenId: number): Promise<boolean> {
     try {
-      if (!this.contract) await this.initializeContract();
+      if (!this.contract || !this.web3) await this.initializeContract();
       
-      const tx = await this.contract!.reportStolen(tokenId);
-      await tx.wait();
+      const accounts = await this.web3!.eth.getAccounts();
+      const tx = await this.contract!.methods.reportStolen(tokenId).send({
+        from: accounts[0]
+      });
       
       toast.success('Bicycle reported as stolen');
       return true;
@@ -109,14 +104,16 @@ export class CycleChainService {
     notes: string
   ): Promise<boolean> {
     try {
-      if (!this.contract) await this.initializeContract();
+      if (!this.contract || !this.web3) await this.initializeContract();
       
-      const tx = await this.contract!.addMaintenanceRecord(
+      const accounts = await this.web3!.eth.getAccounts();
+      const tx = await this.contract!.methods.addMaintenanceRecord(
         tokenId,
         serviceDescription,
         notes
-      );
-      await tx.wait();
+      ).send({
+        from: accounts[0]
+      });
       
       toast.success('Maintenance record added successfully');
       return true;
@@ -133,14 +130,16 @@ export class CycleChainService {
     newComponentDetails: string
   ): Promise<boolean> {
     try {
-      if (!this.contract) await this.initializeContract();
+      if (!this.contract || !this.web3) await this.initializeContract();
       
-      const tx = await this.contract!.addComponentChange(
+      const accounts = await this.web3!.eth.getAccounts();
+      const tx = await this.contract!.methods.addComponentChange(
         tokenId,
         componentType,
         newComponentDetails
-      );
-      await tx.wait();
+      ).send({
+        from: accounts[0]
+      });
       
       toast.success('Component change recorded successfully');
       return true;
@@ -150,7 +149,120 @@ export class CycleChainService {
       return false;
     }
   }
+
+  async getOwnedBicycles(): Promise<Bicycle[]> {
+    try {
+      if (!this.contract || !this.web3) await this.initializeContract();
+      
+      const accounts = await this.web3!.eth.getAccounts();
+      
+      console.log("Fetching bicycles for account:", accounts[0]);
+      
+      const response = await this.contract!.methods.getOwnedBicycles(accounts[0]).call();
+      
+      console.log("Raw response:", response);
+
+      // Handle different response formats
+      let tokenIds: number[] = [];
+      
+      if (Array.isArray(response)) {
+        tokenIds = response;
+      } else if (typeof response === 'object') {
+        // If response is an object with numeric properties
+        tokenIds = Object.values(response)
+          .filter(value => !isNaN(Number(value)))
+          .map(value => Number(value));
+      }
+      
+      console.log("Processed token IDs:", tokenIds);
+      
+      // Map the token IDs to bicycle details
+      const bicyclesPromises = tokenIds.map(async (tokenId) => {
+        try {
+          return await this.getBicycleDetails(tokenId);
+        } catch (error) {
+          console.error(`Error fetching details for token ${tokenId}:`, error);
+          return null;
+        }
+      });
+      
+      const bicycles = await Promise.all(bicyclesPromises);
+      
+      // Filter out any null results
+      return bicycles.filter((bike): bike is Bicycle => bike !== null);
+    } catch (error) {
+      console.error('Error fetching owned bicycles:', error);
+      console.error('Error details:', error instanceof Error ? error.message : error);
+      toast.error('Failed to fetch owned bicycles');
+      return [];
+    }
+  }
+
+  async transferBicycle(tokenId: number, newOwner: string): Promise<boolean> {
+    try {
+      if (!this.contract || !this.web3) await this.initializeContract();
+      
+      const accounts = await this.web3!.eth.getAccounts();
+      const tx = await this.contract!.methods.transferFrom(
+        accounts[0],
+        newOwner,
+        tokenId
+      ).send({
+        from: accounts[0]
+      });
+      
+      toast.success('Bicycle transferred successfully');
+      return true;
+    } catch (error) {
+      console.error('Error transferring bicycle:', error);
+      toast.error('Failed to transfer bicycle');
+      return false;
+    }
+  }
+
+  async getMaintenanceHistory(tokenId: number): Promise<MaintenanceRecord[]> {
+    try {
+      if (!this.contract || !this.web3) await this.initializeContract();
+      
+      const accounts = await this.web3!.eth.getAccounts();
+      const records = await this.contract!.methods.getMaintenanceHistory(tokenId).call({
+        from: accounts[0]
+      });
+      
+      return records.map((record: any) => ({
+        serviceDescription: record.serviceDescription,
+        date: new Date(Number(record.date) * 1000),
+        serviceProvider: record.serviceProvider,
+        notes: record.notes
+      }));
+    } catch (error) {
+      console.error('Error fetching maintenance history:', error);
+      toast.error('Failed to fetch maintenance history');
+      return [];
+    }
+  }
+
+  async getComponentChanges(tokenId: number): Promise<ComponentChange[]> {
+    try {
+      if (!this.contract || !this.web3) await this.initializeContract();
+      
+      const accounts = await this.web3!.eth.getAccounts();
+      const changes = await this.contract!.methods.getComponentHistory(tokenId).call({
+        from: accounts[0]
+      });
+      
+      return changes.map((change: any) => ({
+        componentType: change.componentType,
+        newComponentDetails: change.newComponentDetails,
+        date: new Date(Number(change.date) * 1000),
+        installedBy: change.installedBy
+      }));
+    } catch (error) {
+      console.error('Error fetching component changes:', error);
+      toast.error('Failed to fetch component changes');
+      return [];
+    }
+  }
 }
 
-// Export a singleton instance
 export const cycleChainService = new CycleChainService(); 
