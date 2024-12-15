@@ -12,6 +12,7 @@ import {
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import Link from "next/link";
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from "html5-qrcode";
 
 const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
   <svg
@@ -31,6 +32,36 @@ const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
   </svg>
 );
 
+const SecureContextWarning = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg max-w-md w-full">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-semibold text-red-600">Security Notice</h3>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          ✕
+        </button>
+      </div>
+      <p className="text-gray-600 mb-4">
+        Camera access is only available in secure contexts (HTTPS or localhost).
+        To use the QR scanner:
+      </p>
+      <ul className="list-disc list-inside text-gray-600 mb-4 space-y-2">
+        <li>Access this page via localhost, or</li>
+        <li>Use a secure HTTPS connection, or</li>
+        <li>Enter the recipient's address manually</li>
+      </ul>
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
 export default function BicycleDetails() {
   const params = useParams();
   const id = params.id as string;
@@ -45,6 +76,11 @@ export default function BicycleDetails() {
     []
   );
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scanError, setScanError] = useState<string>("");
+  const [showSecurityWarning, setShowSecurityWarning] = useState(false);
+  const [manualAddress, setManualAddress] = useState("");
+  const [showManualInput, setShowManualInput] = useState(false);
 
   useEffect(() => {
     const loadBicycle = async () => {
@@ -64,6 +100,16 @@ export default function BicycleDetails() {
       loadBicycle();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (bicycle && address) {
+      console.log("Ownership check:", {
+        currentOwner: bicycle.currentOwner.toLowerCase(),
+        userAddress: address.toLowerCase(),
+        isMatch: bicycle.currentOwner.toLowerCase() === address.toLowerCase(),
+      });
+    }
+  }, [bicycle, address]);
 
   const loadServiceHistory = async () => {
     if (!bicycle) return;
@@ -102,19 +148,19 @@ export default function BicycleDetails() {
     }
   };
 
-  const handleTransferOwnership = async () => {
+  const handleTransferOwnership = async (address: string) => {
     try {
       if (!bicycle) return;
-      const newOwner = prompt("Enter the address of the new owner:");
-      if (!newOwner) return;
 
-      await cycleChainService.transferBicycle(bicycle.tokenId, newOwner);
+      await cycleChainService.transferBicycle(bicycle.tokenId, address);
       toast.success("Bicycle transferred successfully");
+      setShowQRScanner(false);
       // Redirect to dashboard after successful transfer
       window.location.href = "/dashboard";
     } catch (error) {
       console.error("Error transferring bicycle:", error);
       toast.error("Failed to transfer bicycle");
+      throw error; // Re-throw to handle in the scanner
     }
   };
 
@@ -139,6 +185,169 @@ export default function BicycleDetails() {
       </div>
     </div>
   );
+
+  const QRScannerModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-4 rounded-lg max-w-md w-full">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Transfer Ownership</h3>
+          <button
+            onClick={() => {
+              setShowQRScanner(false);
+              setShowManualInput(false);
+            }}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
+        </div>
+
+        {showManualInput ? (
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={manualAddress}
+              onChange={(e) => setManualAddress(e.target.value)}
+              placeholder="Enter Ethereum address (0x...)"
+              className="w-full p-2 border rounded"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowManualInput(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleTransferOwnership(manualAddress)}
+                className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
+              >
+                Transfer
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="text-sm text-gray-600 mb-4">
+              Point your camera at the recipient's Ethereum address QR code to
+              transfer ownership.
+            </div>
+
+            <div className="relative">
+              <div id="qr-reader" className="w-full"></div>
+            </div>
+
+            {scanError && (
+              <p className="text-red-500 text-sm mt-2 text-center">
+                {scanError}
+              </p>
+            )}
+
+            <button
+              onClick={() => setShowManualInput(true)}
+              className="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+            >
+              Enter Address Manually
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  useEffect(() => {
+    let scanner: any = null;
+
+    if (showQRScanner && !showManualInput) {
+      try {
+        // Check if we're in a secure context
+        if (!window.isSecureContext) {
+          setShowSecurityWarning(true);
+          return;
+        }
+
+        scanner = new Html5QrcodeScanner(
+          "qr-reader",
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0,
+            formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+            showTorchButtonIfSupported: true,
+            showZoomSliderIfSupported: true,
+          },
+          false
+        );
+
+        scanner.render(
+          (decodedText: string) => {
+            console.log("Scanned QR Code content:", decodedText);
+
+            // Extract Ethereum address from URI format
+            let address = decodedText;
+            if (decodedText.startsWith("ethereum:")) {
+              address = decodedText.split(":")[1].split("@")[0];
+            }
+
+            console.log("Extracted address:", address);
+
+            if (address.startsWith("0x")) {
+              setScanError("");
+              // First clear the scanner
+              scanner.clear();
+              setShowQRScanner(false);
+              // Then attempt the transfer
+              handleTransferOwnership(address).catch((error) => {
+                console.error("Transfer failed:", error);
+                toast.error("Failed to transfer bicycle");
+              });
+            } else {
+              setScanError(
+                "Invalid Ethereum address. Please scan a valid address QR code."
+              );
+            }
+          },
+          (errorMessage: string) => {
+            if (!errorMessage.includes("No barcode or QR code detected")) {
+              console.log("Scanning error:", errorMessage);
+            }
+
+            if (
+              errorMessage.includes("No barcode or QR code detected") ||
+              errorMessage.includes("NotFound") ||
+              errorMessage.includes("NotAllowed") ||
+              errorMessage.includes("QR code parse error")
+            ) {
+              return;
+            }
+
+            if (errorMessage.includes("Camera access denied")) {
+              setScanError("Please allow camera access to scan QR codes.");
+            } else if (errorMessage.includes("Camera not found")) {
+              setScanError("No camera found on your device.");
+            } else {
+              setScanError("Error scanning QR code. Please try again.");
+            }
+          }
+        );
+      } catch (err) {
+        console.error("Failed to start scanner:", err);
+        setScanError(
+          "Failed to start QR scanner. Please check camera permissions."
+        );
+      }
+    }
+
+    return () => {
+      if (scanner) {
+        try {
+          scanner.clear();
+        } catch (error) {
+          console.error("Error clearing scanner:", error);
+        }
+      }
+    };
+  }, [showQRScanner, showManualInput]);
 
   if (isLoading) {
     return (
@@ -207,6 +416,32 @@ export default function BicycleDetails() {
               </span>
             </div>
 
+            {/* Move Action Buttons here, right after the main details */}
+            <div className="mt-8">
+              {bicycle.currentOwner.toLowerCase() === address?.toLowerCase() ? (
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={() => setShowQRScanner(true)}
+                    className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
+                  >
+                    Transfer Ownership
+                  </button>
+                  {!bicycle.isStolen && (
+                    <button
+                      onClick={handleReportStolen}
+                      className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
+                    >
+                      Report Stolen
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Only the owner can perform actions on this bicycle
+                </p>
+              )}
+            </div>
+
             {/* Additional Details */}
             <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="p-4 bg-secondary-50 rounded-lg">
@@ -222,36 +457,14 @@ export default function BicycleDetails() {
                   Current Owner
                 </h3>
                 <p className="text-secondary-600 break-all">
-                  {bicycle.currentOwner === address
+                  {bicycle.currentOwner.toLowerCase() === address?.toLowerCase()
                     ? "You"
                     : bicycle.currentOwner}
                 </p>
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-8 flex flex-wrap gap-4">
-              {bicycle.currentOwner === address && (
-                <>
-                  <button
-                    onClick={handleTransferOwnership}
-                    className="px-6 py-2 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors"
-                  >
-                    Transfer Ownership
-                  </button>
-                  {!bicycle.isStolen && (
-                    <button
-                      onClick={handleReportStolen}
-                      className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors"
-                    >
-                      Report Stolen
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Service History Section with new header */}
+            {/* Service History Section */}
             <ServiceHistoryHeader />
 
             {/* Animate the content */}
@@ -353,6 +566,10 @@ export default function BicycleDetails() {
           </div>
         </div>
       </div>
+      {showQRScanner && <QRScannerModal />}
+      {showSecurityWarning && (
+        <SecureContextWarning onClose={() => setShowSecurityWarning(false)} />
+      )}
     </div>
   );
 }

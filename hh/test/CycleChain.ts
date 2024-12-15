@@ -47,7 +47,7 @@ describe("CycleChain", function () {
     it("Should allow manufacturer to register a new bicycle", async function () {
       const { cycleChain, manufacturer } = await loadFixture(deployCycleChainFixture);
       
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const manufacturerName = "BikeComp";
       const model = "Mountain Pro";
       const proof = keccak256(toUtf8Bytes(`${frameNumber}${manufacturerName}${model}`));
@@ -81,7 +81,7 @@ describe("CycleChain", function () {
     it("Should allow service provider to add maintenance record", async function () {
       const { cycleChain, manufacturer, serviceProvider } = await loadFixture(deployCycleChainFixture);
       
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const proof = keccak256(toUtf8Bytes(frameNumber));
       
       console.log('Registering bicycle before maintenance test');
@@ -116,7 +116,7 @@ describe("CycleChain", function () {
     it("Should allow verifier to authenticate a bicycle", async function () {
       const { cycleChain, manufacturer, verifier } = await loadFixture(deployCycleChainFixture);
       
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const proof = keccak256(toUtf8Bytes(frameNumber));
       
       console.log('Setting up bicycle for verification test');
@@ -153,7 +153,7 @@ describe("CycleChain", function () {
       const { cycleChain, manufacturer, serviceProvider } = await loadFixture(deployCycleChainFixture);
       
       // Register a bicycle
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const proof = keccak256(toUtf8Bytes(frameNumber));
       await cycleChain.connect(manufacturer).registerBicycle(
         frameNumber,
@@ -186,7 +186,7 @@ describe("CycleChain", function () {
       
       console.log('Creating comprehensive bicycle history...');
       
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const proof = keccak256(toUtf8Bytes(frameNumber));
       
       console.log('1. Registering bicycle');
@@ -230,7 +230,7 @@ describe("CycleChain", function () {
       
       // Register multiple bicycles
       const bikesToRegister = [
-        { frameNumber: "BK2023001", model: "Mountain Pro" },
+        { frameNumber: "BK2023002", model: "Mountain Pro" },
         { frameNumber: "BK2023002", model: "Road Elite" },
         { frameNumber: "BK2023003", model: "City Cruiser" }
       ];
@@ -293,7 +293,7 @@ describe("CycleChain", function () {
       const { cycleChain, manufacturer, customer } = await loadFixture(deployCycleChainFixture);
       
       // Register a bicycle
-      const frameNumber = "BK2023001";
+      const frameNumber = "BK2023002";
       const proof = keccak256(toUtf8Bytes(frameNumber));
       
       console.log('Testing ownership transfer scenario...');

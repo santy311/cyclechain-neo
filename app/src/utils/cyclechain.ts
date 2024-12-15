@@ -162,16 +162,15 @@ export class CycleChainService {
       
       console.log("Raw response:", response);
 
-      // Handle different response formats
+      // Extract token IDs from the response
       let tokenIds: number[] = [];
       
-      if (Array.isArray(response)) {
-        tokenIds = response;
-      } else if (typeof response === 'object') {
-        // If response is an object with numeric properties
-        tokenIds = Object.values(response)
-          .filter(value => !isNaN(Number(value)))
-          .map(value => Number(value));
+      if (response.tokenIds && Array.isArray(response.tokenIds)) {
+        // If the response has a tokenIds array property
+        tokenIds = response.tokenIds.map((id: string | number) => Number(id));
+      } else if (Array.isArray(response)) {
+        // If the response is directly an array
+        tokenIds = response.map((id: string | number) => Number(id));
       }
       
       console.log("Processed token IDs:", tokenIds);
@@ -261,6 +260,49 @@ export class CycleChainService {
       console.error('Error fetching component changes:', error);
       toast.error('Failed to fetch component changes');
       return [];
+    }
+  }
+
+  async registerBicycle(
+    frameNumber: string,
+    manufacturer: string,
+    model: string
+  ): Promise<void> {
+    if (!this.contract || !this.web3) await this.initializeContract();
+    
+    try {
+      const accounts = await this.web3!.eth.getAccounts();
+      
+      // Generate a unique proof by combining bicycle details with a timestamp and manufacturer's address
+      const proofData = JSON.stringify({
+        frameNumber,
+        manufacturer,
+        model,
+        timestamp: Date.now(),
+        manufacturerAddress: accounts[0]
+      });
+      
+      // Create a bytes32 hash of the proof data
+      const proofBytes32 = this.web3!.utils.sha3(proofData);
+      if (!proofBytes32) {
+        throw new Error("Failed to generate proof hash");
+      }
+
+      console.log("Proof bytes32:", proofBytes32);
+      await this.contract!.methods.registerBicycle(
+        frameNumber,
+        manufacturer,
+        model,
+        proofBytes32
+      ).send({
+        from: accounts[0]
+      });
+      
+      toast.success('Bicycle registered successfully');
+    } catch (error) {
+      console.error("Error registering bicycle:", error);
+      toast.error('Failed to register bicycle');
+      throw error;
     }
   }
 }

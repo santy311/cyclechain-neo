@@ -16,11 +16,19 @@ export function DashboardContent() {
     const loadBicycles = async () => {
       try {
         setIsLoading(true);
-        const ownedBicycles = await cycleChainService.getOwnedBicycles();
-        setBicycles(ownedBicycles);
+        const bikes = await cycleChainService.getOwnedBicycles();
+
+        // Only filter out duplicates based on tokenId
+        const uniqueBikes = bikes.filter(
+          (bike, index, self) =>
+            index === self.findIndex((b) => b.tokenId === bike.tokenId)
+        );
+
+        setBicycles(uniqueBikes);
       } catch (error) {
         console.error("Error loading bicycles:", error);
-        toast.error("Failed to load your bicycles");
+        toast.error("Failed to load bicycles");
+        setBicycles([]);
       } finally {
         setIsLoading(false);
       }
@@ -28,6 +36,9 @@ export function DashboardContent() {
 
     if (address) {
       loadBicycles();
+    } else {
+      setBicycles([]);
+      setIsLoading(false);
     }
   }, [address]);
 
