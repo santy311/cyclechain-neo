@@ -49,8 +49,8 @@ export default function RegisterBicycle() {
         frameNumber: "",
       });
     } catch (error) {
-      console.error("Error registering bicycle:", error);
-      toast.error("Failed to register bicycle");
+      console.error("Error registering Product:", error);
+      toast.error("Failed to register Product");
     } finally {
       setIsLoading(false);
     }
@@ -58,10 +58,10 @@ export default function RegisterBicycle() {
 
   if (!address) {
     return (
-      <div className="min-h-screen p-4 sm:p-8">
+      <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-secondary-500">
-            Please connect your wallet to register bicycles.
+          <p className="text-gray-900 font-medium">
+            Please connect your manufacturer wallet to register Product.
           </p>
         </div>
       </div>
@@ -69,25 +69,25 @@ export default function RegisterBicycle() {
   }
 
   return (
-    <div className="min-h-screen p-4 sm:p-8">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
       <div className="max-w-2xl mx-auto">
         <div className="mb-4">
           <Link
             href="/dashboard"
-            className="text-primary-600 hover:text-primary-700 flex items-center gap-2"
+            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 font-medium"
           >
             ← Back to Dashboard
           </Link>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <h1 className="text-2xl font-bold text-secondary-800 mb-6">
-            Register New Bicycle
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">
+            Register New Product
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Frame Number
               </label>
               <input
@@ -95,13 +95,13 @@ export default function RegisterBicycle() {
                 name="frameNumber"
                 value={formData.frameNumber}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Manufacturer
               </label>
               <input
@@ -109,13 +109,13 @@ export default function RegisterBicycle() {
                 name="manufacturer"
                 value={formData.manufacturer}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-800 mb-2">
                 Model
               </label>
               <input
@@ -123,7 +123,7 @@ export default function RegisterBicycle() {
                 name="model"
                 value={formData.model}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
@@ -131,9 +131,9 @@ export default function RegisterBicycle() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-6 py-3 bg-primary-600 text-white rounded-full hover:bg-primary-700 transition-colors disabled:bg-primary-400"
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm disabled:bg-blue-400"
             >
-              {isLoading ? "Registering..." : "Register Bicycle"}
+              {isLoading ? "Registering..." : "Register Product"}
             </button>
           </form>
         </div>

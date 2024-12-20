@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { cycleChainService, Bicycle } from "@/utils/cyclechain";
 import { toast } from "react-hot-toast";
+import { getManufacturerImage } from "@/utils/manufacturerImages";
 
 export function DashboardContent() {
   const { address, switchWallet, connectedAccounts } = useWallet();
@@ -46,9 +47,7 @@ export function DashboardContent() {
     <div className="min-h-[calc(100vh-73px)] p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <h1 className="text-2xl font-bold text-secondary-800">
-            Your Bicycles
-          </h1>
+          <h1 className="text-2xl font-bold text-secondary-800">Your Things</h1>
           <div className="flex items-center gap-4">
             <div className="text-sm px-4 py-2 rounded-full bg-secondary-100 text-secondary-600">
               Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
@@ -81,7 +80,7 @@ export function DashboardContent() {
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <div className="aspect-square bg-secondary-50 relative">
                     <Image
-                      src="/images/bike-placeholder.png" // Add a default bicycle image
+                      src={getManufacturerImage(bicycle.manufacturer)}
                       alt={`${bicycle.manufacturer} ${bicycle.model}`}
                       fill
                       className="object-cover p-4 group-hover:scale-105 transition-transform duration-300"

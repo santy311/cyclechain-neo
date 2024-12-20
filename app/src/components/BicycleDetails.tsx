@@ -41,11 +41,11 @@ const SecureContextWarning = ({ onClose }: { onClose: () => void }) => (
           ✕
         </button>
       </div>
-      <p className="text-gray-600 mb-4">
+      <p className="text-gray-800 mb-4">
         Camera access is only available in secure contexts (HTTPS or localhost).
         To use the QR scanner:
       </p>
-      <ul className="list-disc list-inside text-gray-600 mb-4 space-y-2">
+      <ul className="list-disc list-inside text-gray-800 mb-4 space-y-2">
         <li>Access this page via localhost, or</li>
         <li>Use a secure HTTPS connection, or</li>
         <li>Enter the recipient's address manually</li>
@@ -53,7 +53,7 @@ const SecureContextWarning = ({ onClose }: { onClose: () => void }) => (
       <div className="flex justify-end gap-2">
         <button
           onClick={onClose}
-          className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+          className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200 transition-colors"
         >
           Close
         </button>

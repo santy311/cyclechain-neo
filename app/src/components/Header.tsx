@@ -3,6 +3,7 @@
 import { useWallet } from "@/providers/WalletProvider";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 export function Header() {
   const { disconnect, address } = useWallet();
@@ -17,8 +18,15 @@ export function Header() {
     <header className="bg-white/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
-          <Link href="/" className="flex items-center space-x-2">
-            <h1 className="text-xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
+          <Link href="/" className="flex items-center space-x-3">
+            <Image
+              src="/images/chain_logo.png"
+              alt="CycleChain Logo"
+              width={48}
+              height={48}
+              className="w-12 h-12"
+            />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
               CycleChain
             </h1>
           </Link>

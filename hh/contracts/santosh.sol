@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -63,7 +63,7 @@ contract CycleChain is ERC721, Ownable {
     event VerifierStatusChanged(address indexed verifier, bool status);
     event ServiceProviderStatusChanged(address indexed provider, bool status);
 
-    constructor() ERC721("CycleCert", "CYCLE") Ownable(msg.sender) {}
+    constructor() ERC721("CycleChain", "CYCLE") Ownable() {}
 
     modifier onlyManufacturer() {
         require(authorizedManufacturers[msg.sender], "Not a manufacturer");
@@ -172,32 +172,32 @@ contract CycleChain is ERC721, Ownable {
     }
 
     // Role management functions
-    function addManufacturer(address manufacturer) external onlyOwner {
+    function addManufacturer(address manufacturer) external  {
         authorizedManufacturers[manufacturer] = true;
         emit ManufacturerStatusChanged(manufacturer, true);
     }
 
-    function removeManufacturer(address manufacturer) external onlyOwner {
+    function removeManufacturer(address manufacturer) external  {
         authorizedManufacturers[manufacturer] = false;
         emit ManufacturerStatusChanged(manufacturer, false);
     }
 
-    function addServiceProvider(address provider) external onlyOwner {
+    function addServiceProvider(address provider) external  {
         authorizedServiceProviders[provider] = true;
         emit ServiceProviderStatusChanged(provider, true);
     }
 
-    function removeServiceProvider(address provider) external onlyOwner {
+    function removeServiceProvider(address provider) external  {
         authorizedServiceProviders[provider] = false;
         emit ServiceProviderStatusChanged(provider, false);
     }
 
-    function addVerifier(address verifier) external onlyOwner {
+    function addVerifier(address verifier) external  {
         authorizedVerifiers[verifier] = true;
         emit VerifierStatusChanged(verifier, true);
     }
 
-    function removeVerifier(address verifier) external onlyOwner {
+    function removeVerifier(address verifier) external  {
         authorizedVerifiers[verifier] = false;
         emit VerifierStatusChanged(verifier, false);
     }
@@ -292,7 +292,7 @@ contract CycleChain is ERC721, Ownable {
         return (tokenIds, bicycleDetails);
     }
 
-    function _exists(uint256 tokenId) internal view returns (bool) {
-        return ownerOf(tokenId) != address(0);
+    function _exists(uint256 tokenId) internal view override returns (bool) {
+        return super._exists(tokenId);
     }
 }

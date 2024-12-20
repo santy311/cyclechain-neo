@@ -36,9 +36,9 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-gray-100 py-12">
       <div className="container mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-8 text-gray-900">
+        <h1 className="text-3xl font-bold mb-8 text-gray-800">
           Add Maintenance Record
         </h1>
 
@@ -47,7 +47,7 @@ export default function MaintenancePage() {
             <div className="mb-6">
               <label
                 htmlFor="tokenId"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-sm font-semibold text-gray-800 mb-2"
               >
                 Bicycle Token ID
               </label>
@@ -59,7 +59,7 @@ export default function MaintenancePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, tokenId: e.target.value })
                 }
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
@@ -67,7 +67,7 @@ export default function MaintenancePage() {
             <div className="mb-6">
               <label
                 htmlFor="serviceDescription"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-sm font-semibold text-gray-800 mb-2"
               >
                 Service Description
               </label>
@@ -82,7 +82,7 @@ export default function MaintenancePage() {
                     serviceDescription: e.target.value,
                   })
                 }
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
@@ -90,7 +90,7 @@ export default function MaintenancePage() {
             <div className="mb-6">
               <label
                 htmlFor="notes"
-                className="block text-sm font-semibold text-gray-700 mb-2"
+                className="block text-sm font-semibold text-gray-800 mb-2"
               >
                 Service Notes
               </label>
@@ -101,7 +101,7 @@ export default function MaintenancePage() {
                 onChange={(e) =>
                   setFormData({ ...formData, notes: e.target.value })
                 }
-                className="w-full p-3 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full p-3 border border-gray-300 rounded-md h-32 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white text-gray-900"
                 required
               />
             </div>
@@ -117,12 +117,12 @@ export default function MaintenancePage() {
 
         {/* Example Records Section */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">
             Example Maintenance Records
           </h2>
           <div className="border border-gray-200 rounded-md p-4 bg-gray-50">
-            <p className="font-semibold text-gray-800 mb-3">Example entries:</p>
-            <ul className="list-disc pl-5 space-y-2 text-gray-700">
+            <p className="font-semibold text-gray-900 mb-3">Example entries:</p>
+            <ul className="list-disc pl-5 space-y-2 text-gray-800">
               <li>Token ID: 1234</li>
               <li>Service Description: Annual maintenance service</li>
               <li>

@@ -31,6 +31,19 @@ const WalletContext = createContext<WalletContextType>({
   connectedAccounts: [],
 });
 
+// Add these network constants
+const REQUIRED_CHAIN_ID = Number(process.env.NEXT_PUBLIC_CHAIN_ID);
+const NETWORK_CONFIG = {
+  chainId: `0x${Number(REQUIRED_CHAIN_ID).toString(16)}`,
+  chainName: process.env.NEXT_PUBLIC_CHAIN_NAME,
+  nativeCurrency: {
+    name: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL,
+    symbol: process.env.NEXT_PUBLIC_CURRENCY_SYMBOL,
+    decimals: 18,
+  },
+  rpcUrls: [process.env.NEXT_PUBLIC_RPC_URL],
+};
+
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,41 +56,44 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     return accounts;
   };
 
-  useEffect(() => {
-    const savedAddress = localStorage.getItem("lastConnectedAddress");
+  const checkAndSwitchNetwork = async () => {
+    if (!window.ethereum) return;
 
-    const checkConnection = async () => {
-      try {
-        if (typeof window.ethereum !== "undefined") {
-          const web3Instance = new Web3(window.ethereum as unknown as Provider);
-          const accounts = await updateAccounts(web3Instance);
-
-          if (accounts.length > 0) {
-            // Connect to the last used address if available, otherwise use the first account
-            const addressToUse =
-              savedAddress && accounts.includes(savedAddress)
-                ? savedAddress
-                : accounts[0];
-
-            setWeb3(web3Instance);
-            setAddress(addressToUse);
-            localStorage.setItem("lastConnectedAddress", addressToUse);
-          }
+    try {
+      // Try switching to the network
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: NETWORK_CONFIG.chainId }],
+      });
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [NETWORK_CONFIG],
+          });
+        } catch (addError) {
+          console.error("Failed to add network:", addError);
+          toast.error("Failed to add network to wallet");
+          throw addError;
         }
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Failed to check wallet connection:", error);
-        setIsLoading(false);
+      } else {
+        console.error("Failed to switch network:", switchError);
+        toast.error("Failed to switch network");
+        throw switchError;
       }
-    };
-
-    checkConnection();
-  }, []);
+    }
+  };
 
   const connect = async () => {
     try {
       if (typeof window.ethereum !== "undefined") {
         setIsLoading(true);
+
+        // First ensure we're on the correct network
+        await checkAndSwitchNetwork();
+
         const web3Instance = new Web3(window.ethereum as unknown as Provider);
 
         // Request account access
@@ -90,7 +106,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           localStorage.setItem("lastConnectedAddress", accounts[0]);
           toast.success("Wallet connected successfully");
         }
-        setIsLoading(false);
       } else {
         toast.error("Please install MetaMask!");
         throw new Error("Please install MetaMask!");
@@ -98,8 +113,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Failed to connect wallet:", error);
       toast.error("Failed to connect wallet");
-      setIsLoading(false);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -170,6 +186,46 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       };
     }
   }, [web3]);
+
+  // Modify the useEffect for checking initial connection
+  useEffect(() => {
+    const savedAddress = localStorage.getItem("lastConnectedAddress");
+
+    const checkConnection = async () => {
+      try {
+        if (typeof window.ethereum !== "undefined") {
+          // Check if we're on the correct network
+          const chainId = await window.ethereum.request({
+            method: "eth_chainId",
+          });
+          if (parseInt(chainId, 16) !== REQUIRED_CHAIN_ID) {
+            setIsLoading(false);
+            return;
+          }
+
+          const web3Instance = new Web3(window.ethereum as unknown as Provider);
+          const accounts = await updateAccounts(web3Instance);
+
+          if (accounts.length > 0) {
+            const addressToUse =
+              savedAddress && accounts.includes(savedAddress)
+                ? savedAddress
+                : accounts[0];
+
+            setWeb3(web3Instance);
+            setAddress(addressToUse);
+            localStorage.setItem("lastConnectedAddress", addressToUse);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to check wallet connection:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkConnection();
+  }, []);
 
   return (
     <WalletContext.Provider

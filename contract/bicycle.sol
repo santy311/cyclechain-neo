@@ -291,7 +291,7 @@ contract CycleChain is ERC721 {
         return (tokenIds, bicycleDetails);
     }
 
-    function _exists(uint256 tokenId) internal view returns (bool) {
+    function _exists(uint256 tokenId) internal view override returns (bool) {
         return ownerOf(tokenId) != address(0);
     }
 }

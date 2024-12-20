@@ -1,7 +1,8 @@
 import Web3 from 'web3';
 import { Contract } from 'web3-eth-contract';
 import { toast } from 'react-hot-toast';
-import CONTRACT_ABI from '../../contract_abi.json';
+import CONTRACT_ABI_IMPORT from '../abi/CycleChain.json';
+const CONTRACT_ABI = CONTRACT_ABI_IMPORT.abi;
 import { AbiItem } from 'web3-utils';
 
 const CYCLECHAIN_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CYCLECHAIN_CONTRACT_ADDRESS;
@@ -41,10 +42,16 @@ export class CycleChainService {
   private async initializeContract() {
     try {
       if (typeof window !== 'undefined' && window.ethereum) {
-        this.web3 = new Web3(window.ethereum as any);
+        const provider = window.ethereum;
+        this.web3 = new Web3(provider as any);
         
         if (!CYCLECHAIN_CONTRACT_ADDRESS) {
           throw new Error('Contract address not configured');
+        }
+
+        if (!CONTRACT_ABI || !Array.isArray(CONTRACT_ABI)) {
+          console.error('Invalid ABI:', CONTRACT_ABI);
+          throw new Error('Invalid contract ABI format');
         }
 
         this.contract = new this.web3.eth.Contract(
@@ -54,6 +61,7 @@ export class CycleChainService {
       }
     } catch (error) {
       console.error('Failed to initialize contract:', error);
+      console.error('Error details:', error instanceof Error ? error.message : error);
       toast.error('Failed to connect to blockchain');
     }
   }
@@ -62,20 +70,57 @@ export class CycleChainService {
     try {
       if (!this.contract) await this.initializeContract();
       
-      const details = await this.contract!.methods.getBicycleBasicDetails(tokenId).call();
+      if (!this.contract) {
+        throw new Error('Contract not initialized');
+      }
+
+      // First check if the token exists
+      try {
+        const exists = await this.contract.methods.ownerOf(tokenId).call();
+        if (!exists) {
+          return null;
+        }
+      } catch (error) {
+        return null;
+      }
       
-      return {
-        frameNumber: details.frameNumber,
-        manufacturer: details.manufacturer,
-        model: details.model,
-        manufactureDate: new Date(Number(details.manufactureDate) * 1000),
-        currentOwner: details.owner,
-        isStolen: false,
-        tokenId: tokenId
-      };
-    } catch (error) {
-      console.error('Error fetching bicycle details:', error);
-      toast.error('Failed to fetch bicycle details');
+      try {
+        // Try getting basic details
+        const details = await this.contract.methods.getBicycleBasicDetails(tokenId).call();
+        
+        return {
+          frameNumber: details.frameNumber || '',
+          manufacturer: details.manufacturer || '',
+          model: details.model || '',
+          manufactureDate: new Date(Number(details.manufactureDate || 0) * 1000),
+          currentOwner: details.owner || '',
+          isStolen: Boolean(details.isStolen || false),
+          tokenId: tokenId
+        };
+      } catch (error: any) {
+        // Try alternative method name if it exists
+        try {
+          const details = await this.contract.methods.bicycles(tokenId).call();
+          
+          return {
+            frameNumber: details.frameNumber || '',
+            manufacturer: details.manufacturer || '',
+            model: details.model || '',
+            manufactureDate: new Date(Number(details.manufactureDate || 0) * 1000),
+            currentOwner: details.owner || '',
+            isStolen: Boolean(details.isStolen || false),
+            tokenId: tokenId
+          };
+        } catch (alternativeError) {
+          throw error;
+        }
+      }
+    } catch (error: any) {
+      if (error.message.includes('execution reverted')) {
+        toast.error('This bicycle token does not exist');
+      } else {
+        toast.error('Failed to fetch bicycle details');
+      }
       return null;
     }
   }
@@ -158,6 +203,7 @@ export class CycleChainService {
       
       console.log("Fetching bicycles for account:", accounts[0]);
       
+
       const response = await this.contract!.methods.getOwnedBicycles(accounts[0]).call();
       
       console.log("Raw response:", response);
