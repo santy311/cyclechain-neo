@@ -1,4 +1,4 @@
-# CycleChain: Blockchain-Based Bicycle Authentication & Tracking System
+# CycleChain: Non-Fungible Items
 
 ## Overview
 
