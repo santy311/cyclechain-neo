@@ -4,6 +4,8 @@
 
 CycleChain is a decentralized application built on the Neo blockchain that provides an immutable and transparent system for bicycle registration, ownership tracking, and theft prevention. By creating digital twins of physical bicycles, we enable secure ownership verification and maintenance tracking throughout a bicycle's lifecycle.
 
+## It does not stop with just cycles, luxury items are the target
+
 ## Problem Statement
 
 - Global bicycle theft is a significant issue, with millions of bikes stolen annually
